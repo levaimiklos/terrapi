@@ -1,0 +1,46 @@
+{% extends 'bootstrap/base.html' %}
+
+{% block title %}
+    {% if title %}{{ title }} - TerraPi{% else %}TerraPi{% endif %}
+{% endblock %}
+
+{% block navbar %}
+<div class = "container">
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">Menu</a>
+    <!-- <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button> -->
+    <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+      <div class="navbar-nav">
+        <a class="nav-link" href="{{ url_for('index') }}">HOME</a>
+        {% if current_user.is_anonymous %}
+        <a class="nav-link" href="{{ url_for('login') }}">LOGIN</a>
+        {% else %}
+        <a class="nav-link" href="{{ url_for('logout') }}">LOGOUT</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+</div>
+<hr>
+{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+  <div class="container">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-info" role="alert">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    <h1 class="display-3">TerraPI</h1>
+    <p>Remote supervision of the chameleon.</p>
+    <hr>
+  </div>
+  {# application content needs to be provided in the app_content block #}
+  {% block app_content %}{% endblock %}
+</div>
+{% endblock %}

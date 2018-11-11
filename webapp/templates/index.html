@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+
+{% block app_content %}
+<div class="container">
+  <div class="row">
+    <div class="col-md-3">
+      <h3>TEMPERATURE</h3>
+    </div>
+    <div class="col-md-3">
+      <p>Current temperature is:</p>
+      <p><span id="temperature_value" class="alert alert-dark"></span>°C</p>
+    </div>
+    <div class="col-md-3">
+      <p>Temperature setpoint: <span id="temperature_setpoint_value"></span>°C</p>
+      <p>
+        <button type="button" id="decrease_temperature_setpoint" class="btn btn-primary">-</button>
+        <button type="button" id="increase_temperature_setpoint" class="btn btn-danger">+</button>
+      </p>
+    </div>
+    <div class="col-md-3">
+      <p>Heater</p>
+      <p><span id="heater_value"></span></p>
+    </div>
+  </div>
+  <hr>
+  <div class="row">
+    <div class="col-md-3">
+      <h3>HUMIDITY</h3>
+    </div>
+    <div class="col-md-3">
+      <p>Current humidity is:</p>
+      <p><span id="humidity_value" class="alert alert-dark"></span>%</p>
+    </div>
+    <div class="col-md-3">
+      <p>Humidity setpoint: <span id="humidity_setpoint_value"></span>%</p>
+      <p>
+        <button type="button" id="decrease_humidity_setpoint" class="btn btn-primary">-</button>
+        <button type="button" id="increase_humidity_setpoint" class="btn btn-danger">+</button>
+      </p>
+    </div>
+    <div class="col-md-3">
+      <p>Humidifier</p>
+      <p><span id="humidifier_value"></span></p>
+      <p>Dehumidifier</p>
+      <p><span id="dehumidifier_value"></span></p>
+    </div>
+  </div>
+  <hr>
+  <div class="row">
+    <div class="col-md-3">
+      <h3>STATUS</h3>
+    </div>
+    <div class="col-md-3">
+      <p>Lamp</p>
+      <p><span id="lamp_value"></span></p>
+    </div>
+    <div class="col-md-3">
+      <p>Door</p>
+      <p><span id="door_value"></span></p>
+    </div>
+    <div class="col-md-3">
+      <p>LED</p>
+      <p>
+        <button type="button" id="led_on" class="btn btn-success">On</button>
+        <button type="button" id="led_off" class="btn btn-danger">Off</button>
+      </p>
+    </div>
+  </div>
+  <hr>
+  <div class="row">
+    <div class="col-md-3">
+      <h3>Live stream</h3>
+    </div>
+    <div class="col-md-3">
+      <p><a class="alert alert-info" href="http://192.168.1.100:8081" target="_blank">on local</a></p>
+    </div>
+    <div class="col-md-3">
+      <p><a class="alert alert-info" href="http://mikipi.servebeer.com:8081" target="_blank">from remote</a></p>
+    </div>
+    <div class="col-md-3">
+      <p>Battery percentage: {{battery_percentage}}%</p>
+      <p>Battery voltage: {{battery_voltage}}V</p>
+    </div>
+  </div>
+</div>
+<hr>
+<hr>
+
+<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script>window.jQuery || document.write('<script src="js/vendor/jquery-3.3.1.min.js"><\/script>')</script>
+<script src="{{ url_for("static", filename = "js/bootstrap.min.js") }}"></script>
+<script src="{{ url_for("static", filename = "js/socket.io.js") }}"></script>
+
+<script>
+    $(document).ready(function() {
+
+        function updateTempHumi(tempValue, humiValue){
+            console.log('Temperature: ' + tempValue, 'Humidity: ' + humiValue);
+            if (tempValue == 0) {
+                $('#temperature_value').text('waiting for data...');
+                $('#humidity_value').text('waiting for data...');
+                }
+            else {
+            $('#temperature_value').text(tempValue);
+            $('#humidity_value').text(humiValue);
+                }
+            }
+        function updateTemperatureSetpoint(tempSpValue){
+            console.log('New temperature setpoint is: ' + tempSpValue);
+            $('#temperature_setpoint_value').text(tempSpValue);
+            }
+        function updateHumiditySetpoint(humiSpValue){
+            console.log('New humidity setpoint is: ' + humiSpValue);
+            $('#humidity_setpoint_value').text(humiSpValue);
+            }
+        // Function to update the door state on the page.
+        function updateDoor(doorState) {
+            console.log('door state ' + doorState);
+            if (doorState === 1) {
+                $('#door_value').text('OPENED');
+                $('#door_value').toggleClass('alert alert-success', false);
+                $('#door_value').toggleClass('alert alert-danger', true);
+            }
+            else if (doorState === 0) {
+                $('#door_value').text('CLOSED');
+                $('#door_value').toggleClass('alert alert-danger', false);
+                $('#door_value').toggleClass('alert alert-success', true);
+            }
+        }
+        // Function to update the lamp state on the page.
+        function updateLamp(lampState) {
+            console.log('Lamp state ' + lampState);
+            if (lampState === 1) {
+                $('#lamp_value').text('Off');
+                $('#lamp_value').toggleClass('alert alert-warning', false);
+                $('#lamp_value').toggleClass('alert alert-secondary', true);
+            }
+            else if (lampState === 0) {
+                $('#lamp_value').text('On');
+                $('#lamp_value').toggleClass('alert alert-secondary', false);
+                $('#lamp_value').toggleClass('alert alert-warning', true);
+            }
+        }
+        // Function to update the heater state on the page.
+        function updateHeater(heaterState) {
+            console.log('Heater state ' + heaterState);
+            if (heaterState === 1) {
+                $('#heater_value').text('Off');
+                $('#heater_value').toggleClass('alert alert-success', false);
+                $('#heater_value').toggleClass('alert alert-danger', true);
+            }
+            else if (heaterState === 0) {
+                $('#heater_value').text('On');
+                $('#heater_value').toggleClass('alert alert-danger', false);
+                $('#heater_value').toggleClass('alert alert-success', true);
+            }
+        }
+        // Function to update the humidifier state on the page.
+        function updateHumidifier(humidifierState) {
+            console.log('Humidifier state ' + humidifierState);
+            if (humidifierState === 1) {
+                $('#humidifier_value').text('Off');
+                $('#humidifier_value').toggleClass('alert alert-success', false);
+                $('#humidifier_value').toggleClass('alert alert-danger', true);
+            }
+            else if (humidifierState === 0) {
+                $('#humidifier_value').text('On');
+                $('#humidifier_value').toggleClass('alert alert-danger', false);
+                $('#humidifier_value').toggleClass('alert alert-success', true);
+            }
+        }
+        // Function to update the dehumidifier state on the page.
+        function updateDehumidifier(dehumidifierState) {
+            console.log('Dehumidifier state ' + dehumidifierState);
+            if (dehumidifierState === 1) {
+                $('#dehumidifier_value').text('Off');
+                $('#dehumidifier_value').toggleClass('alert alert-success', false);
+                $('#dehumidifier_value').toggleClass('alert alert-danger', true);
+            }
+            else if (dehumidifierState === 0) {
+                $('#dehumidifier_value').text('On');
+                $('#dehumidifier_value').toggleClass('alert alert-danger', false);
+                $('#dehumidifier_value').toggleClass('alert alert-success', true);
+            }
+        }
+
+        updateTempHumi({{ loading }});
+        updateDoor({{ door }});
+        updateLamp({{ lamp }});
+        updateHeater({{ heater }});
+        updateHumidifier({{ humidifier }});
+        updateDehumidifier({{ dehumidifier }});
+        updateTemperatureSetpoint({{ new_temp_sp_val }});
+        updateHumiditySetpoint({{ new_humi_sp_val }});
+
+        // Create SocketIO connect and attach handlers for events from the server.
+        var socket = io.connect();
+        socket.on('connect', function() {
+            console.log('Socket connected.');
+        });
+        socket.on('temp_humidity_change', function(e) {
+            updateTempHumi(e.temperature, e.humidity);
+        });
+        socket.on('door_change', function(e) {
+            updateDoor(e.door);
+        });
+        socket.on('lamp_change', function(e) {
+            updateLamp(e.lamp);
+        });
+        socket.on('heater_change', function(e) {
+            updateHeater(e.heater);
+        });
+        socket.on('humidifier_change', function(e) {
+            updateHumidifier(e.humidifier);
+        });
+        socket.on('dehumidifier_change', function(e) {
+            updateDehumidifier(e.dehumidifier);
+        });
+        socket.on('new_temp_sp_val', function(e) {
+            updateTemperatureSetpoint(e.new_temp_sp_val);
+        });
+        socket.on('new_humi_sp_val', function(e) {
+            updateHumiditySetpoint(e.new_humi_sp_val);
+        });
+
+        // Button click handlers
+        $('#led_on').click(function() {
+            socket.emit('change_led', 'on');
+        });
+        $('#led_off').click(function() {
+            socket.emit('change_led', 'off');
+        });
+
+        $('#increase_temperature_setpoint').click(function() {
+            socket.emit('change_temperature_sp', 'increase');
+        });
+        $('#decrease_temperature_setpoint').click(function() {
+            socket.emit('change_temperature_sp', 'decrease');
+        });
+
+        $('#increase_humidity_setpoint').click(function() {
+            socket.emit('change_humidity_sp', 'increase');
+        });
+        $('#decrease_humidity_setpoint').click(function() {
+            socket.emit('change_humidity_sp', 'decrease');
+        });
+    });
+</script>
+{%endblock%}
