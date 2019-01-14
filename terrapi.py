@@ -1,8 +1,10 @@
 #! /usr/bin/env python3
 
-from webapp import webapp, db, socketio
-from webapp.models import User, Post
-
+from webapp import webapp
+from webapp import db
+from webapp import socketio
+from webapp.models import User
+from webapp.models import Post
 
 @webapp.shell_context_processor
 def make_shell_context():

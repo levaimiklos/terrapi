@@ -96,7 +96,7 @@
 
         function updateTempHumi(tempValue, humiValue){
             console.log('Temperature: ' + tempValue, 'Humidity: ' + humiValue);
-            if (tempValue == 0) {
+            if (tempValue == -1) {
                 $('#temperature_value').text('waiting for data...');
                 $('#humidity_value').text('waiting for data...');
                 }
@@ -133,11 +133,11 @@
             if (lampState === 1) {
                 $('#lamp_value').text('Off');
                 $('#lamp_value').toggleClass('alert alert-warning', false);
-                $('#lamp_value').toggleClass('alert alert-secondary', true);
+                $('#lamp_value').toggleClass('alert alert-danger', true);
             }
             else if (lampState === 0) {
                 $('#lamp_value').text('On');
-                $('#lamp_value').toggleClass('alert alert-secondary', false);
+                $('#lamp_value').toggleClass('alert alert-danger', false);
                 $('#lamp_value').toggleClass('alert alert-warning', true);
             }
         }

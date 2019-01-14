@@ -21,21 +21,24 @@ from webapp import db
 from webapp.models import User
 from webapp.forms import LoginForm
 # from webapp.forms import RegistrationForm
+
 sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir))
 import flow as Flow
-
 Flow = Flow.Flow()
-
 
 @webapp.route("/")
 @webapp.route("/index")
 @login_required
 def index():
     door = Flow.read_door()
-    lamp = Flow.read_lamp()
-    heater = Flow.read_heater()
-    humidifier = Flow.read_humidifier()
-    dehumidifier = Flow.read_dehumidifier()
+    # lamp = Flow.read_lamp()
+    lamp = 1
+    # heater = Flow.read_heater()
+    heater = 1
+    # humidifier = Flow.read_humidifier()
+    humidifier = 1
+    # dehumidifier = Flow.read_dehumidifier()
+    dehumidifier = 1
     new_temp_sp_val = Flow.new_temperature_setpoint
     new_humi_sp_val = Flow.new_humidity_setpoint
     battery_percentage = Flow.read_battery_percentage()
@@ -50,7 +53,7 @@ def index():
                      'new_humi_sp_val' : new_humi_sp_val,
                      'battery_percentage' : battery_percentage,
                      'battery_voltage' : battery_voltage,
-                     'loading' : 0}
+                     'loading' : -1}
     return render_template('index.html', **template_data)
 
 @webapp.route('/login', methods=['GET', 'POST'])

@@ -2,9 +2,17 @@
 
 import time
 import RPi.GPIO as GPIO
-from terrarium import _dht_sensor as _dht_sensor
-from terrarium import _ds18b20_sensor as _ds18b20_sensor
 
+try:
+    from terrarium import _mcp23017 as _ctrl
+    from terrarium import _dht_sensor as _dht_sensor
+    from terrarium import _ds18b20_sensor as _ds18b20_sensor
+    from terrarium import _bmx280_sensor as _bmx280_sensor
+    from terrarium import _htu21_sensor as _htu21_sensor
+except:
+    raise
+
+ctrl = _ctrl.MCP23017_ctrl()
 
 class Tool(object):
 
@@ -15,25 +23,28 @@ class Tool(object):
 
     def switch_on(self):
         try:
-            GPIO.output(self.PIN, self.ON)
+            # GPIO.output(self.PIN, self.ON)
+            ctrl.on(self.PIN, self.ON)
         except:
             raise
 
     def switch_off(self):
         try:
-            GPIO.output(self.PIN, self.OFF)
+            # GPIO.output(self.PIN, self.OFF)
+            ctrl.off(self.PIN, self.OFF)
         except:
             raise
 
-    def toggle(self):
-        try:
-            GPIO.output(self.PIN, self.ON) if GPIO.input(self.PIN) else GPIO.output(self.PIN, self.OFF)
-        except:
-            raise
+    # def toggle(self):
+    #     try:
+    #         GPIO.output(self.PIN, self.ON) if GPIO.input(self.PIN) else GPIO.output(self.PIN, self.OFF)
+    #     except:
+    #         raise
 
     def state(self):
         try:
-            state = GPIO.input(self.PIN)
+            # state = GPIO.input(self.PIN)
+            state = ctrl.state()
             return state
         except:
             raise
@@ -90,7 +101,6 @@ class Sensor(object):
         pass
 
     def read(self):
-        print('Read.')
         return self.sensor.read()
 
 class DHT_sensor(Sensor):
@@ -105,11 +115,17 @@ class DS18B20_sensor(Sensor):
         super().__init__()
         self.sensor = _ds18b20_sensor.sensor()
 
-class BMP280_sensor(Sensor):
+class BMx280_sensor(Sensor):
+
+    def __init__(self, configuration):
+        super().__init__()
+        self.sensor = _bmx280_sensor.sensor(configuration)
+
+class HTU21_sensor(Sensor):
 
     def __init__(self):
         super().__init__()
-        self.sensor = _bmp280_sensor.sensor()
+        self.sensor = _htu21_sensor.sensor()
 
 
 
@@ -141,4 +157,13 @@ class LED(object):
                 GPIO.output(self.configuration[color], self.OFF)
                 time.sleep(0.1)
         except:
+            raise
+
+    def all_off(self):
+        try:
+            pins = []
+            for pin in self.configuration:
+                pins.append(self.configuration[pin])
+            GPIO.output(pins, 0)
+        except Exception as e:
             raise

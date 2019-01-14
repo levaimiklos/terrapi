@@ -6,16 +6,16 @@ import time
 import json
 import atexit
 # import logging
-
 import RPi.GPIO as GPIO
 import Adafruit_DHT as DHT
 
 #imports from own package
 import terrarium as Terrarium
-from terrarium import Configuration
+from terrarium import Configuration as Configuration
 from terrarium import Scheduler as Scheduler
 from terrarium import Battery as Battery
 from terrarium import Controller as Controller
+
 
 """Create a logger"""
 # date_now = time.strftime("%Y%m%d_%H%M")
@@ -27,41 +27,61 @@ from terrarium import Controller as Controller
 # terrarium_logger = logging.getLogger('TerraPI')
 
 
-"""Make sure RPI.GPIO resources are cleaned up at the end of the program."""
-atexit.register(GPIO.cleanup)
+# """check the pin init success"""
+# pin_init_success = 1 if Terrarium.pin_init_success else sys.exit(69)
 
-
-"""check the pin init success"""
-pin_init_success = 1 if Terrarium.pin_init_success else sys.exit(69)
 
 """Initiating the objects"""
 Lamp = Controller.Lamp(Configuration.TOOLS)
 Heater = Controller.Heater(Configuration.TOOLS)
 Humidifier = Controller.Humidifier(Configuration.TOOLS)
 Dehumidifier = Controller.Dehumidifier(Configuration.TOOLS)
-DHT_sensor_1 = Controller.DHT_sensor(Configuration.DHT_SENSOR1)
 Reed_relay = Controller.Reed_relay(Configuration.REED_RELAY)
 LED = Controller.LED(Configuration.LEDS)
+
+#__SENSORS__
+Sensor_1 = Controller.DHT_sensor(Configuration.DHT_SENSOR1)
+# Sensor_1 = Controller.DS18B20_sensor()
+# Sensor_1 = Controller.BMx280_sensor(Configuration.BMx_SENSOR)
+# Sensor_1 = Controller.HTU21_sensor()
+
+# Sensor_2 = Controller.DHT_sensor(Configuration.DHT_SENSOR2)
+# Sensor_2 = Controller.DS18B20_sensor()
+# Sensor_2 = Controller.BMx280_sensor(Configuration.BMx_SENSOR)
+# Sensor_2 = Controller.HTU21_sensor()
+
+
+"""Make sure RPI.GPIO resources are cleaned up at the end of the program."""
+def exit_proc():
+    print('exiting')
+    LED.blink('BLUE_LED', 5)
+    Lamp.switch_off()
+    Heater.switch_off()
+    Humidifier.switch_off()
+    Dehumidifier.switch_off()
+    GPIO.cleanup()
+    print('bye...')
+
+atexit.register(exit_proc)
+
+
 
 class Flow(object):
 
     def __init__(self):
         self.DELAY = Configuration.TIMING['delay']
-
         self.temperature = None
         self.set_temperature = float(Configuration.CONTROLLER['set_temperature'])
         self.new_temperature_setpoint = self.set_temperature
         self.temperature_threshold = int(Configuration.CONTROLLER['temperature_threshold'])
-
         self.humidity = None
         self.set_humidity = float(Configuration.CONTROLLER['set_humidity'])
         self.new_humidity_setpoint = self.set_humidity
         self.humidity_threshold = int(Configuration.CONTROLLER['humidity_threshold'])
         self.max_humidity = int(Configuration.CONTROLLER['max_humidity'])
-
-        self.heater_state = Heater.OFF  # Heating is OFF by default
-        self.humidifier_state   = Humidifier.OFF  # Humidifying is OFF by default
-        self.dehumidifier_state = Dehumidifier.OFF  # Dehumidifying is OFF by default
+        self.heater_state = Heater.switch_off()  # Heating is OFF by default
+        self.humidifier_state   = Humidifier.switch_off()  # Humidifying is OFF by default
+        self.dehumidifier_state = Dehumidifier.switch_off()  # Dehumidifying is OFF by default
 
         """LOCK"""
         self._lock = threading.Lock()
@@ -69,7 +89,7 @@ class Flow(object):
 
         """CALLBACKS"""
         self._door_callback = None
-        self._dht_callback = None
+        self._temphumi_callback = None
         self._lamp_callback = None
         self._heater_callback = None
         self._humidifier_callback = None
@@ -80,8 +100,8 @@ class Flow(object):
 
         """"THREADS"""
         # Create and start DHT reading thread in the background
-        self._dht_thread = threading.Thread(target=self._update_dht, name = "_dht_thread", daemon = True)
-        self._dht_thread.start()
+        self._temphumi_thread = threading.Thread(target=self._update_temphumi, name = "_temphumi_thread", daemon = True)
+        self._temphumi_thread.start()
         # self._dht_thread_ident = self._dht_thread.ident
         #Create and start light switching thread in the background
         self._lamp_thread = threading.Thread(target=self._switch_lamp, name="_lamp_thread", daemon = True)
@@ -100,30 +120,34 @@ class Flow(object):
                 if Scheduler.is_light_time():
                     Lamp.switch_on() #ON
                     if self._lamp_callback is not None:
-                        self._lamp_callback(Lamp.state())
+                        # self._lamp_callback(Lamp.state())
+                        self._lamp_callback(0)
                     print('LAMP: ON')
                 else:
                     Lamp.switch_off() #OFF
                     if self._lamp_callback is not None:
-                        self._lamp_callback(Lamp.state())
+                        # self._lamp_callback(Lamp.state())
+                        self._lamp_callback(1)
                     print('LAMP: OFF')
+                # if self._lamp_callback is not None:
+                #     self._lamp_callback(Lamp.state())
                 # terrarium_logger.debug('LAMP is ON') if not GPIO.input(int(configuration['TOOLS']['LAMP'])) else terrarium_logger.debug('LAMP is OFF')
-            time.sleep(self.DELAY)
+            time.sleep(20)
 
     #update the temperature and humidity values in every 'delay' seconds
-    def _update_dht(self):
+    def _update_temphumi(self):
         """Main function for DHT update thread, will grab new temp & humidity values every n seconds."""
         while True:
             with self._lock:
                 # Read the humidity and temperature from the DHT sensor.
-                data = DHT_sensor_1.read()
-                self.temperature = round(data['temperature'], 2)
-                self.humidity = round(data['humidity'], 2)
-                if self._dht_callback is not None:
-                    self._dht_callback(self.temperature, self.humidity)
+                data = Sensor_1.read()
+                self.temperature = round(data['temperature'], 3)
+                self.humidity = round(data['humidity'], 3)
+                if self._temphumi_callback is not None:
+                    self._temphumi_callback(self.temperature, self.humidity)
                 self.check_temperature(self.temperature)
                 self.check_humidity(self.humidity)
-                LED.blink('GREEN_LED', 2) if data['temperature'] is not 0 and data['humidity'] is not 0 else LED.blink('RED_LED', 4)
+            LED.blink('GREEN_LED', 2) if data['temperature'] > 0 and data['humidity'] >= 0 else LED.blink('RED_LED', 4)
             print("TEMPERATURE: {}'C,\tHUMIDITY: {}%,\tDATE: {}.".format(data['temperature'], data['humidity'], time.strftime("%Y.%m.%d., %H:%M:%S")))
             # terrarium_logger.info("TEMPERATURE: %s'c,\tHUMIDITY: %s\tDATE: %s ", temperature, humidity, time.strftime("%Y.%m.%d., %H:%M:%S"))
             time.sleep(self.DELAY)
@@ -131,7 +155,7 @@ class Flow(object):
 
     """SOCKET TRIGGERS"""
     def on_temp_humidity_change(self, callback):
-        self._dht_callback = callback
+        self._temphumi_callback = callback
     def on_door_change(self, callback):
         self._door_callback = callback
     def on_lamp_change(self, callback):
@@ -157,12 +181,12 @@ class Flow(object):
         with self._lock:
             return Reed_relay.state()
 
-
-    """"LAMP"""
-    def read_lamp(self):
-        # Read the lamp state and return its current value.
-        with self._lock:
-            return Lamp.state()
+    #
+    # """"LAMP"""
+    # def read_lamp(self):
+    #     # Read the lamp state and return its current value.
+    #     with self._lock:
+    #         return Lamp.state()
 
 
     """LED"""
@@ -174,36 +198,38 @@ class Flow(object):
 
     """TEMPERATURE"""
     def check_temperature(self, temperature):
-        if Scheduler.is_light_time():
-            if 17 < temperature < 40:
-                if temperature <= (self.new_temperature_setpoint - self.temperature_threshold):
-                    if self.heater_state == Heater.OFF and Heater.state():
-                        Heater.switch_on()
-                        self.heater_state = Heater.state()
-                        self._trigger_heater_callback()
-                elif temperature >= (self.new_temperature_setpoint + self.temperature_threshold):
-                    if self.heater_state == Heater.ON and not Heater.state():
-                        Heater.switch_off()
-                        self.heater_state = Heater.state()
-                        self._trigger_heater_callback()
-                elif ((self.new_temperature_setpoint - self.temperature_threshold) < temperature < (self.new_temperature_setpoint + self.temperature_threshold)):
-                    # print('Temperature is in the range, no action was taken.')
-                    pass
-                else:
-                    # ERROR while checking the temperature.
-                    Heater.switch_off()
-                    self.heater_state = Heater.state()
-                    self._trigger_heater_callback()
-                    # terrarium_logger.error('ERROR with TEMPERATURE: %s', temperature)
+        if Scheduler.is_light_time() and (17 < temperature < 40):
+            if temperature <= (self.new_temperature_setpoint - self.temperature_threshold):
+                print('Heating ON.')
+                # if self.heater_state == Heater.OFF and Heater.state():
+                Heater.switch_on()
+                # self.heater_state = Heater.state()
+                self.heater_state = Heater.ON
+                self._trigger_heater_callback()
+            elif temperature >= (self.new_temperature_setpoint + self.temperature_threshold):
+                print('Heating OFF.')
+            #     if self.heater_state == Heater.ON and not Heater.state():
+                Heater.switch_off()
+            #         self.heater_state = Heater.state()
+                self.heater_state = Heater.OFF
+                self._trigger_heater_callback()
+            elif ((self.new_temperature_setpoint - self.temperature_threshold) < temperature < (self.new_temperature_setpoint + self.temperature_threshold)):
+                print('Temperature is in the range, no action was taken.')
+            #     pass
             else:
-                # terrarium_logger.error('TEMPERATURE is: %s - out of range', temperature)
-                pass
+                print('ERROR while checking the temperature.')
+                Heater.switch_off()
+                # self.heater_state = Heater.state()
+                self.heater_state = Heater.OFF
+                self._trigger_heater_callback()
+            #     # terrarium_logger.error('ERROR with TEMPERATURE: %s', temperature)
         else:
-            # Not heating, out of timeframe.
+            print('Not heating, out of timeframe or temp range.')
             Heater.switch_off()
-            self.heater_state = Heater.state()
+            # self.heater_state = Heater.state()
+            self.heater_state = Heater.OFF
             self._trigger_heater_callback()
-        print('end of temp checking func.')
+        # print('end of temp checking func.')
 
     def increase_temperature_setpoint(self, value):
         new_value = self.new_temperature_setpoint + value
@@ -219,10 +245,10 @@ class Flow(object):
         # terrarium_logger.debug('Temperature setpoint was decreased. New value: %s', self.new_temperature_setpoint)
         return self.new_temperature_setpoint
 
-    def read_heater(self):
-        #Read the heater state and return its current value.
-        with self._lock:
-            return Heater.state()
+    # def read_heater(self):
+    #     #Read the heater state and return its current value.
+    #     with self._lock:
+    #         return Heater.state()
 
     # Callback trigger on change
     def _trigger_heater_callback(self):
@@ -232,57 +258,78 @@ class Flow(object):
 
     """HUMIDITY"""
     def check_humidity(self, humidity):
-        if 10 < humidity < 99:
+        if Scheduler.is_light_time() and (1 < humidity < 99):
             if humidity < (self.new_humidity_setpoint - self.humidity_threshold):
+                print("Humidifier ON.")
                 Humidifier.switch_on()
                 Dehumidifier.switch_off()
-                self.humidifier_state = Humidifier.state()
-                self.dehumidifier_state = Dehumidifier.state()
+                # self.humidifier_state = Humidifier.state()
+                # self.dehumidifier_state = Dehumidifier.state()
+                self.humidifier_state = Humidifier.ON
+                self.dehumidifier_state = Dehumidifier.OFF
                 self._trigger_humidifier_callback()
                 self._trigger_dehumidifier_callback()
             elif ((self.new_humidity_setpoint - self.humidity_threshold) <= humidity < (self.new_humidity_setpoint + self.humidity_threshold)):
-                if (self.humidifier_state == Humidifier.ON and not Humidifier.state()) or (self.humidifier_state == Humidifier.OFF and Humidifier.state()): #ON & ON  or  OFF & OFF
+                print('Humidity in range. No action was taken.')
+                # if (self.humidifier_state == Humidifier.ON and not Humidifier.state()) or (self.humidifier_state == Humidifier.OFF and Humidifier.state()): #ON & ON  or  OFF & OFF
                     # print('No change in humidifier. It is ON or OFF already.')
-                    pass
-                else:
-                    Humidifier.switch_on()
-                    Dehumidifier.switch_off()
+                    # pass
+                # else:
+                #     Humidifier.switch_on()
+                #     Dehumidifier.switch_off()
             elif ((self.new_humidity_setpoint + self.humidity_threshold) <= humidity < (self.max_humidity-5)):
+                print('Humidifier and Dehumidifier OFF.')
                 Humidifier.switch_off()
                 Dehumidifier.switch_off()
-                self.humidifier_state = Humidifier.state()
-                self.dehumidifier_state = Dehumidifier.state()
+                # self.humidifier_state = Humidifier.state()
+                # self.dehumidifier_state = Dehumidifier.state()
+                self.humidifier_state = Humidifier.OFF
+                self.dehumidifier_state = Dehumidifier.OFF
                 self._trigger_humidifier_callback()
                 self._trigger_dehumidifier_callback()
             elif ((self.max_humidity-5) <= humidity < (self.max_humidity+5)):
-                if (self.humidifier_state == Humidifier.ON and not Humidifier.state()) or (self.humidifier_state == Humidifier.OFF and Humidifier.state()): #ON & ON  or  OFF & OFF
-                    # print('No change in dehumidifier. It is ON or OFF already.')
-                    pass
-                else:
-                    Humidifier.switch_off()
-                    Dehumidifier.switch_on()
-                    self.humidifier_state = Humidifier.state()
-                    self.dehumidifier_state = Dehumidifier.state()
-                    self._trigger_humidifier_callback()
-                    self._trigger_dehumidifier_callback()
-            elif (self.max_humidity+5) <= humidity:
+                # if (self.humidifier_state == Humidifier.ON and not Humidifier.state()) or (self.humidifier_state == Humidifier.OFF and Humidifier.state()): #ON & ON  or  OFF & OFF
+                print('No change in humidifier. It is ON or OFF already.')
+                    # pass
+                # else:
                 Humidifier.switch_off()
                 Dehumidifier.switch_on()
-                self.humidifier_state = Humidifier.state()
-                self.dehumidifier_state = Dehumidifier.state()
+                # self.humidifier_state = Humidifier.state()
+                # self.dehumidifier_state = Dehumidifier.state()
+                self.humidifier_state = Humidifier.OFF
+                self.dehumidifier_state = Dehumidifier.ON
+                self._trigger_humidifier_callback()
+                self._trigger_dehumidifier_callback()
+            elif (self.max_humidity+5) <= humidity:
+                print('Humidifier OFF, Dehumidifier ON.')
+                Humidifier.switch_off()
+                Dehumidifier.switch_on()
+                # self.humidifier_state = Humidifier.state()
+                # self.dehumidifier_state = Dehumidifier.state()
+                self.humidifier_state = Humidifier.OFF
+                self.dehumidifier_state = Dehumidifier.ON
                 self._trigger_humidifier_callback()
                 self._trigger_dehumidifier_callback()
             else:
+                print('ERROR\tHumidifier OFF, Dehumidifier OFF.')
                 Humidifier.switch_off()
                 Dehumidifier.switch_off()
-                self.humidifier_state = Humidifier.state()
-                self.dehumidifier_state = Dehumidifier.state()
+                # self.humidifier_state = Humidifier.state()
+                # self.dehumidifier_state = Dehumidifier.state()
+                self.humidifier_state = Humidifier.OFF
+                self.dehumidifier_state = Dehumidifier.OFF
                 self._trigger_humidifier_callback()
                 self._trigger_dehumidifier_callback()
                 # terrarium_logger.error('ERROR with humidity: %s ' %humidity)
         else:
+            print('Out of timeframe. Humidifier OFF, Dehumidifier OFF.')
+            Humidifier.switch_off()
+            Dehumidifier.switch_off()
+            self.humidifier_state = Humidifier.OFF
+            self.dehumidifier_state = Dehumidifier.OFF
+            self._trigger_humidifier_callback()
+            self._trigger_dehumidifier_callback()
             # terrarium_logger.error('Humidity is: %s - out of range', humidity)
-            pass
 
     def increase_humidity_setpoint(self, value):
         new_value = self.new_humidity_setpoint + value
@@ -298,15 +345,15 @@ class Flow(object):
         # terrarium_logger.debug('Humidity setpoint was decreased. New value: %s', self.new_humidity_setpoint)
         return self.new_humidity_setpoint
 
-    def read_humidifier(self):
-        """Read the humidifier state and return its current value."""
-        with self._lock:
-            return Humidifier.state()
+    # def read_humidifier(self):
+    #     """Read the humidifier state and return its current value."""
+    #     with self._lock:
+    #         return Humidifier.state()
 
-    def read_dehumidifier(self):
-        """Read the humidifier state and return its current value."""
-        with self._lock:
-            return Dehumidifier.state()
+    # def read_dehumidifier(self):
+    #     """Read the humidifier state and return its current value."""
+    #     with self._lock:
+    #         return Dehumidifier.state()
 
     # Callback trigger on change
     def _trigger_humidifier_callback(self):
@@ -323,12 +370,11 @@ class Flow(object):
     """"BATTERY"""
     def read_battery_percentage(self):
         # Read the battery percentage and return its current value.
-        return Battery.read_percentage()
+        return round(Battery.read_percentage(), 3)
 
     def read_battery_voltage(self):
         # Read the battery percentage and return its current value.
-        return Battery.read_voltage()
-
+        return round(Battery.read_voltage(), 3)
 
 
 

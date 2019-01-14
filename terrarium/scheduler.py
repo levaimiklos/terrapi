@@ -16,10 +16,16 @@ class Scheduler(object):
     def is_light_time(self):
         current_time = datetime.time(hour=datetime.datetime.now().hour, minute=datetime.datetime.now().minute, second=datetime.datetime.now().second)
         # print('current time: {0}'.format(current_time))
-        if self.start_light_time > self.stop_light_time:
-            # print('ERROR: stop time should be later than start time.')
+        try:
+            if self.start_light_time > self.stop_light_time:
+                raise ValueError
+            elif self.start_light_time < current_time < self.stop_light_time:
+                return True
+            else:
+                return False
+        except ValueError as ve:
+            print(ve, '\nERROR: stop time should be later than start time.\n')
             return False
-        elif self.start_light_time < current_time < self.stop_light_time:
-            return True
-        else:
+        except Exception as e:
+            print(e)
             return False
