@@ -11,6 +11,7 @@ class Pin_init(object):
 
     def initialize_pins(self):
         try:
+            print('Initializing PINs.')
             """Initialize PINs"""
             GPIO.setwarnings(False)
             GPIO.setmode(GPIO.BCM)
@@ -56,21 +57,24 @@ class Pin_init(object):
 
             self.pin_init_success = True
 
-            """BLINK 3 after setup done."""
-            for i in range(3):
-                GPIO.output(self.configuration.LEDS["GREEN_LED"], 1)
-                time.sleep(0.2)
-                GPIO.output(self.configuration.LEDS["GREEN_LED"], 0)
-                time.sleep(0.2)
+            # """BLINK 3 after setup done."""
+            # for i in range(3):
+            #     GPIO.output(self.configuration.LEDS["GREEN_LED"], 1)
+            #     time.sleep(0.2)
+            #     GPIO.output(self.configuration.LEDS["GREEN_LED"], 0)
+            #     time.sleep(0.2)
+
+            print('Initialization finished successfully.')
 
         except:
             self.pin_init_success = False
-            """BLINK 3 after setup done."""
-            for i in range(3):
-                GPIO.output(self.configuration.LEDS["RED_LED"], 1)
-                time.sleep(0.2)
-                GPIO.output(self.configuration.LEDS["RED_LED"], 0)
-                time.sleep(0.2)
+            # """BLINK 3 after setup done."""
+            # for i in range(3):
+            #     GPIO.output(self.configuration.LEDS["RED_LED"], 1)
+            #     time.sleep(0.2)
+            #     GPIO.output(self.configuration.LEDS["RED_LED"], 0)
+            #     time.sleep(0.2)
+            print('Initialization failed.')
             raise
 
         # TRUE if all PINs are set, else FALSE

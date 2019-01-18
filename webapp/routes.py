@@ -131,11 +131,14 @@ def humidifier_change(humidifier):
 #internal callback that will be called when the humidifier changes state.
 def dehumidifier_change(dehumidifier):
     socketio.emit('dehumidifier_change', {'dehumidifier' : dehumidifier})
+def battery_change(battery_p, battery_v):
+    socketio.emit('battery_change', {'battery_p' : battery_p, 'battery_v' : battery_v})
 
 
 Flow.on_temp_humidity_change(temp_humidity_change)
 Flow.on_door_change(door_change)
-Flow.on_lamp_change(lamp_change)
-Flow.on_heater_change(heater_change)
-Flow.on_humidifier_change(humidifier_change)
-Flow.on_dehumidifier_change(dehumidifier_change)
+Flow.on_LAMP_change(lamp_change)
+Flow.on_UVB_change(heater_change)
+Flow.on_HEATER_change(humidifier_change)
+Flow.on_RAIN_change(dehumidifier_change)
+Flow.on_BATTERY_change(battery_change)

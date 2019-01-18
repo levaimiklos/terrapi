@@ -3,6 +3,7 @@
 import time
 import RPi.GPIO as GPIO
 
+
 try:
     from terrarium import _mcp23017 as _ctrl
     from terrarium import _dht_sensor as _dht_sensor
@@ -50,37 +51,49 @@ class Tool(object):
             raise
 
 
-class Lamp(Tool):
+class LAMP(Tool):
 
     def __init__(self, configuration):
         super().__init__()
-        self.PIN = configuration['LAMP']
+        try:
+            self.PIN = configuration["LAMP"]
+        except Exception as e:
+            self.PIN = 1
 
 
-class Heater(Tool):
-
-    def __init__(self, configuration):
-        super().__init__()
-        self.PIN = configuration['HEATER']
-
-
-class Humidifier(Tool):
+class UVB(Tool):
 
     def __init__(self, configuration):
         super().__init__()
-        self.PIN = configuration['HUMIDIFIER']
+        try:
+            self.PIN = configuration['UVB']
+        except Exception as e:
+            self.PIN = 2
 
 
-class Dehumidifier(Tool):
+class HEATER(Tool):
 
     def __init__(self, configuration):
         super().__init__()
-        self.PIN = configuration['DEHUMIDIFIER']
+        try:
+            self.PIN = configuration['HEATER']
+        except Exception as e:
+            self.PIN = 3
+
+
+class RAIN(Tool):
+
+    def __init__(self, configuration):
+        super().__init__()
+        try:
+            self.PIN = configuration['RAIN']
+        except Exception as e:
+            self.PIN = 4
 
 
 
 
-class Reed_relay(object):
+class REED_RELAY(object):
 
     def __init__(self, configuration):
         self.PIN = configuration['REED_RELAY']
@@ -136,6 +149,7 @@ class LED(object):
         self.configuration = configuration
         self.OFF = 0
         self.ON = 1
+        self.frequency = 100
 
     def switch_on(self, color):
         try:
@@ -151,11 +165,28 @@ class LED(object):
 
     def blink(self, color, repeat):
         try:
+            # for n in range(int(repeat)):
+            #     GPIO.output(self.configuration[color], self.ON)
+            #     time.sleep(0.3)
+            #     GPIO.output(self.configuration[color], self.OFF)
+            #     time.sleep(0.1)
+            pausetime=0.01
+            jump = 5
+            color = GPIO.PWM(self.configuration[color], self.frequency)
+            color.start(0)
+            # time.sleep(3)
+            print('pwm set. led: {}. start blinking.'.format(color))
             for n in range(int(repeat)):
-                GPIO.output(self.configuration[color], self.ON)
-                time.sleep(0.3)
-                GPIO.output(self.configuration[color], self.OFF)
-                time.sleep(0.1)
+                for i in range(0, 101, jump):
+                    # print(i)
+                    color.ChangeDutyCycle(i)
+                    time.sleep(pausetime)
+                for i in range(100, -1, -jump):
+                    # print(i)
+                    color.ChangeDutyCycle(i)
+                    time.sleep(pausetime)
+                time.sleep(0.5)
+            color.stop()
         except:
             raise
 

@@ -14,14 +14,14 @@ print('Starting Controller.py test.\n')
 
 try:
     #LAMP
-    LAMP = Controller.Lamp(Configuration.TOOLS)
-    print('LAMP object: ', LAMP)
-    print('on state = ', LAMP.ON)
-    print('LAMP.state: ', LAMP.state())
-    LAMP.switch_on()
-    time.sleep(DELAY)
-    LAMP.switch_off()
-    time.sleep(DELAY)
+    # LAMP = Controller.LAMP(Configuration.TOOLS)
+    # print('LAMP object: ', LAMP)
+    # print('on state = ', LAMP.ON)
+    # print('LAMP.state: ', LAMP.state())
+    # LAMP.switch_on()
+    # time.sleep(DELAY)
+    # LAMP.switch_off()
+    # time.sleep(DELAY)
     #
     # #HEATER
     # HEATER = Controller.Heater(Configuration.TOOLS)
@@ -73,32 +73,35 @@ try:
 
     #LED
     LED = Controller.LED(Configuration.LEDS)
-    time.sleep(1)
-    LED.switch_on('RED_LED')
-    time.sleep(DELAY)
-    LED.switch_off('RED_LED')
-    time.sleep(DELAY)
-    LED.switch_on('GREEN_LED')
-    time.sleep(DELAY)
-    LED.switch_off('GREEN_LED')
-    time.sleep(DELAY)
+    # time.sleep(1)
+    # print('red')
+    # LED.switch_on('RED_LED')
+    # time.sleep(DELAY*2)
+    # LED.switch_off('RED_LED')
+    # time.sleep(DELAY)
+    # print('green')
+    # LED.switch_on('GREEN_LED')
+    # time.sleep(DELAY*3)
+    # LED.switch_off('GREEN_LED')
+    # time.sleep(DELAY)
+    # print('blue')
+    # LED.switch_on('BLUE_LED')
+    # time.sleep(DELAY*4)
+    # LED.switch_off('BLUE_LED')
+    # time.sleep(DELAY)
+
+    LED.blink('RED_LED', 3)
+    time.sleep(DELAY*2)
+    LED.blink('GREEN_LED', 2)
+    time.sleep(DELAY*2)
     LED.switch_on('BLUE_LED')
-    time.sleep(DELAY)
+    time.sleep(DELAY*6)
     LED.switch_off('BLUE_LED')
-    time.sleep(DELAY)
-
-    LED.switch_on('RED_LED')
-    LED.switch_on('GREEN_LED')
-    time.sleep(DELAY)
-
-
-
-
-
 
 
 
 except:
-    pass
+    raise
 finally:
-    LED.all_off()
+    # LED.all_off()
+    pass

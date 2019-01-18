@@ -78,8 +78,11 @@
       <p><a class="alert alert-info" href="http://mikipi.servebeer.com:8081" target="_blank">from remote</a></p>
     </div>
     <div class="col-md-3">
-      <p>Battery percentage: {{battery_percentage}}%</p>
-      <p>Battery voltage: {{battery_voltage}}V</p>
+      <p>Battery percentage:</p>
+      <p><span id="battery_p_value" class="alert alert-dark"></span>%</p>
+      <p>Battery voltage:</p>
+      <p><span id="battery_v_value" class="alert alert-dark"></span>V</p>
+
     </div>
   </div>
 </div>
@@ -105,14 +108,23 @@
             $('#humidity_value').text(humiValue);
                 }
             }
+
         function updateTemperatureSetpoint(tempSpValue){
             console.log('New temperature setpoint is: ' + tempSpValue);
             $('#temperature_setpoint_value').text(tempSpValue);
             }
+
         function updateHumiditySetpoint(humiSpValue){
             console.log('New humidity setpoint is: ' + humiSpValue);
             $('#humidity_setpoint_value').text(humiSpValue);
             }
+
+        // Function to update the status of the Battery
+        function updateBattery(batteryPvalue, batteryVvalue){
+            $('#battery_p_value').text(batteryPvalue);
+            $('#battery_v_value').text(batteryVvalue);
+            }
+
         // Function to update the door state on the page.
         function updateDoor(doorState) {
             console.log('door state ' + doorState);
@@ -127,6 +139,7 @@
                 $('#door_value').toggleClass('alert alert-success', true);
             }
         }
+
         // Function to update the lamp state on the page.
         function updateLamp(lampState) {
             console.log('Lamp state ' + lampState);
@@ -141,6 +154,7 @@
                 $('#lamp_value').toggleClass('alert alert-warning', true);
             }
         }
+
         // Function to update the heater state on the page.
         function updateHeater(heaterState) {
             console.log('Heater state ' + heaterState);
@@ -155,6 +169,7 @@
                 $('#heater_value').toggleClass('alert alert-success', true);
             }
         }
+
         // Function to update the humidifier state on the page.
         function updateHumidifier(humidifierState) {
             console.log('Humidifier state ' + humidifierState);
@@ -169,6 +184,7 @@
                 $('#humidifier_value').toggleClass('alert alert-success', true);
             }
         }
+
         // Function to update the dehumidifier state on the page.
         function updateDehumidifier(dehumidifierState) {
             console.log('Dehumidifier state ' + dehumidifierState);
@@ -192,6 +208,7 @@
         updateDehumidifier({{ dehumidifier }});
         updateTemperatureSetpoint({{ new_temp_sp_val }});
         updateHumiditySetpoint({{ new_humi_sp_val }});
+        updateBattery({{battery_percentage}},{{battery_voltage}});
 
         // Create SocketIO connect and attach handlers for events from the server.
         var socket = io.connect();
@@ -215,6 +232,9 @@
         });
         socket.on('dehumidifier_change', function(e) {
             updateDehumidifier(e.dehumidifier);
+        });
+        socket.on('battery_change', function(e) {
+            updateBattery(e.battery_p, e.battery_v);
         });
         socket.on('new_temp_sp_val', function(e) {
             updateTemperatureSetpoint(e.new_temp_sp_val);

@@ -9,8 +9,8 @@ TIMING = {
 CONTROLLER = {
     'auto_mode' :  0,
     'set_temperature' : 20,
-    'set_humidity' : 30,
     'temperature_threshold' : 2,
+    'set_humidity' : 30,
     'humidity_threshold' : 5,
     'max_humidity' : 80
     }
@@ -30,9 +30,9 @@ LEDS = {
 TOOLS = {
     # type      : pin
    'LAMP' : 1,
-   'HEATER' : 2,
-   'HUMIDIFIER' : 3,
-   'DEHUMIDIFIER' : 4
+   'UVB' : 2,
+   'HEATER' : 3,
+   'RAIN' : 4
    }
 
 DHT_SENSOR1 = {
