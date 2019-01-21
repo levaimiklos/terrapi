@@ -170,12 +170,12 @@ class LED(object):
             #     time.sleep(0.3)
             #     GPIO.output(self.configuration[color], self.OFF)
             #     time.sleep(0.1)
-            pausetime=0.01
+            pausetime=0.007
             jump = 5
             color = GPIO.PWM(self.configuration[color], self.frequency)
             color.start(0)
             # time.sleep(3)
-            print('pwm set. led: {}. start blinking.'.format(color))
+            # print('pwm set. led: {}. start blinking.'.format(color))
             for n in range(int(repeat)):
                 for i in range(0, 101, jump):
                     # print(i)
@@ -185,7 +185,7 @@ class LED(object):
                     # print(i)
                     color.ChangeDutyCycle(i)
                     time.sleep(pausetime)
-                time.sleep(0.5)
+                time.sleep(0.3)
             color.stop()
         except:
             raise

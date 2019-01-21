@@ -2,17 +2,16 @@ TIMING = {
     'start_light_time_hour' : 8,
     'start_light_time_minute' : 0,
     'stop_light_time_hour' : 20,
-    'stop_light_time_minute' : 30,
-    'delay' : 30
+    'stop_light_time_minute' : 0,
+    'delay' : 30, #sec
+    'uvb_delay' : 30, #min
+    'rain_1' : 8,
+    'rain_2' : 18
     }
 
 CONTROLLER = {
-    'auto_mode' :  0,
     'set_temperature' : 20,
     'temperature_threshold' : 2,
-    'set_humidity' : 30,
-    'humidity_threshold' : 5,
-    'max_humidity' : 80
     }
 
 REED_RELAY = {

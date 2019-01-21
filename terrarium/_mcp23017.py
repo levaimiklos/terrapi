@@ -25,7 +25,7 @@ class MCP23017_ctrl(object):
             self.bus.write_byte_data(MCP23017_DEVICE, MCP23017_OUTPUTS, 0xFF) # OLATA everything off
         except OSError as ose:
             print (ose)
-            print('No MCP device is connected!\n\n')
+            print('[ERROR] MCP23017: No MCP device is connected!\n\n')
         except:
             raise
 
@@ -33,23 +33,23 @@ class MCP23017_ctrl(object):
     def on(self, PIN, VALUE):
         bit = PIN - 1
         current_value = self.bus.read_byte_data(MCP23017_DEVICE, MCP23017_INPUTS)
-        print('register value: 0b{0:08b}'.format(current_value))
+        # print('register value: 0b{0:08b}'.format(current_value))
         if VALUE == 1:
             new_value = current_value | (1 << bit) # Set pin '1'
         elif VALUE == 0:
             new_value = current_value & (0xff - (1 << bit)) # Set pin '0'
-        print('new value: 0b{0:08b}'.format(new_value))
+        # print('new value: 0b{0:08b}'.format(new_value))
         self.bus.write_byte_data(MCP23017_DEVICE, MCP23017_OUTPUTS, new_value)
 
     def off(self, PIN, VALUE):
         bit = PIN - 1
         current_value = self.bus.read_byte_data(MCP23017_DEVICE, MCP23017_INPUTS)
-        print('register value: 0b{0:08b}'.format(current_value))
+        # print('register value: 0b{0:08b}'.format(current_value))
         if VALUE == 0:
             new_value = current_value & (0xff - (1 << bit)) # Set pin '0'
         elif VALUE == 1:
             new_value = current_value | (1 << bit) # Set pin '1'
-        print('new value: 0b{0:08b}'.format(new_value))
+        # print('new value: 0b{0:08b}'.format(new_value))
         self.bus.write_byte_data(MCP23017_DEVICE, MCP23017_OUTPUTS, new_value)
 
     def all_low(self):

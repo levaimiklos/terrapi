@@ -103,5 +103,5 @@ try:
 except:
     raise
 finally:
-    # LED.all_off()
-    pass
+    LED.all_off()
+    # pass
